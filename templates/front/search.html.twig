@@ -1,0 +1,14 @@
+{% extends "front/base.html.twig" %}
+
+{% block body %}
+
+	<h1>Les résultats de la recherche
+		{{ term }}
+		sont :</h1>
+
+	{% for article in articles %}
+		<h2>{{ article.title }}</h2>
+        <h3>{{article.writer}}</h3>
+	{% endfor %}
+
+{% endblock %}

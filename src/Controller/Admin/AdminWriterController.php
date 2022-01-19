@@ -7,15 +7,13 @@ use App\Form\WriterType;
 use App\Repository\WriterRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
 
 class AdminWriterController extends AbstractController
 {
-    /**
-     * @Route("admin/writers", name="admin_writer_list")
-     */
+
     public function adminListWriter(WriterRepository $writerRepository)
     {
         $writers = $writerRepository->findAll();
@@ -23,9 +21,6 @@ class AdminWriterController extends AbstractController
         return $this->render("admin/writers.html.twig", ['writers' => $writers]);
     }
 
-    /**
-     * @Route("admin/writer/{id}", name="admin_writer_show")
-     */
     public function adminShowWriter($id, WriterRepository $writerRepository)
     {
         $writer = $writerRepository->find($id);
@@ -33,9 +28,6 @@ class AdminWriterController extends AbstractController
         return $this->render("admin/writer.html.twig", ['writer' => $writer]);
     }
 
-    /**
-     * @Route("admin/update/writer/{id}", name="admin_update_writer")
-     */
     public function adminUpdateWriter(
         $id,
         WriterRepository $writerRepository,
@@ -61,12 +53,10 @@ class AdminWriterController extends AbstractController
         return $this->render("admin/writerform.html.twig", ['writerForm' => $writerForm->createView()]);
     }
 
-    /**
-     * @Route("admin/create/writer/", name="admin_writer_create")
-     */
     public function adminWriterCreate(
         Request $request,
-        EntityManagerInterface $entityManagerInterface
+        EntityManagerInterface $entityManagerInterface,
+        MailerInterface $mailerInterface
     ) {
         $writer = new Writer();
 
@@ -80,6 +70,14 @@ class AdminWriterController extends AbstractController
             $entityManagerInterface->persist($writer);
             $entityManagerInterface->flush();
 
+            $email = (new Email())
+                ->from('test@test.com')
+                ->to('test@test.fr')
+                ->subject('Création d\'un auteur')
+                ->html('<p>Vous êtes un nouvel auteur su le projet</p>');
+
+            $mailerInterface->send($email);
+
             return $this->redirectToRoute("admin_writer_list");
         }
 
@@ -87,9 +85,6 @@ class AdminWriterController extends AbstractController
         return $this->render("admin/writerform.html.twig", ['writerForm' => $writerForm->createView()]);
     }
 
-    /**
-     * @Route("admin/delete/writer/{id}", name="admin_delete_writer")
-     */
     public function adminDeleteWriter(
         $id,
         WriterRepository $writerRepository,
@@ -103,5 +98,15 @@ class AdminWriterController extends AbstractController
         $entityManagerInterface->flush();
 
         return $this->redirectToRoute("admin_writer_list");
+    }
+
+
+    public function adminSearch(WriterRepository $writerRepository, Request $request)
+    {
+        $term = $request->query->get('term');
+
+        $writers = $writerRepository->searchByTerm($term);
+
+        return $this->render('admin/search.html.twig', ['term' => $term, 'writers' => $writers]);
     }
 }
